@@ -1,0 +1,33 @@
+#!/bin/bash
+
+juju-log "Configuring as a worker"
+NIMBUS_AVAILABLE=`relation-get nimbus_available`
+
+if [ "$NIMBUS_AVAILABLE" != "Yes" ]
+then
+	juju-log "Relation with Nimbus not available yet"
+	exit 0
+fi
+
+NIMBUS_HOSTNAME=`relation-get nimbus_hostname`
+NIMBUS_ADDRESS=`relation-get nimbus_address`
+
+juju-log "Connecting to Nimbus $NIMBUS_HOSTNAME at $NIMBUS_ADDRESS"
+
+cat <<EOF > nimbus.json
+{
+	"storm_nimbus_ip": "$NIMBUS_ADDRESS"
+}
+EOF
+
+# drop something for the common hook(s) to know what to restart
+echo "supervisor" > this_node_role.txt
+
+# *** common parts
+scripts/make_chef_parameters.py
+cd Chef-Repository
+chef-client -z \
+    -j ../chef.json \
+    -o recipe[storm::configure],recipe[storm::start_supervisor]
+# *** end of common parts
+

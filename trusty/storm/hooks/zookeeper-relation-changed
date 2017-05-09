@@ -1,0 +1,30 @@
+#!/bin/bash
+
+juju-log "Connecting to Zookeeper"
+PRIVATE_ADDRESS=$(relation-get private-address)
+
+juju-log "Zookeeper at $PRIVATE_ADDRESS"
+
+cat <<EOF > zookeeper.json
+{
+    "zookeeper_quorum": "$PRIVATE_ADDRESS"
+}
+EOF
+
+RUNLIST=recipe[storm::configure]
+
+if [ -e "this_node_role.txt" ]
+then
+    ROLE=$(cat this_node_role.txt)
+    RUNLIST="${RUNLIST},recipe[storm::start_${ROLE}]"
+
+    juju-log "Will also start $ROLE"
+fi
+
+# *** common parts
+scripts/make_chef_parameters.py
+cd Chef-Repository
+chef-client -z \
+    -j ../chef.json \
+    -o $RUNLIST
+# *** end of common parts

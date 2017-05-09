@@ -1,0 +1,17 @@
+name: storm
+summary: DICE's take on Storm 1.0.x charm
+maintainer: Matej Artac <matej.artac@xlab.si>
+description: |
+  Experiments and installs Storm using Chef cookbooks written for Cloudify
+tags:
+  - applications
+  - bigdata
+subordinate: false
+provides:
+  nimbus:
+    interface: nimbus
+requires:
+  zookeeper:
+    interface: zookeeper
+  worker:
+    interface: nimbus

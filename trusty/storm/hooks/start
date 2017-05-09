@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [ -e "nimbus.json" ]
+then
+    juju-log "Starting worker node"
+
+    TARGET_RECIPE="storm::start_supervisor"
+else
+    juju-log "Starting nimbus/ui node"
+
+    TARGET_RECIPE="storm::start_nimbus"
+fi
+
+# *** common parts
+scripts/make_chef_parameters.py
+cd Chef-Repository
+chef-client -z \
+    -j ../chef.json \
+    -o recipe[${TARGET_RECIPE}]
+# *** end of common parts

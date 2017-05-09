@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e
+
+juju-log "Installing Chef"
+CHEF_PACKAGE=chef_13.0.118-1_amd64.deb
+[[ -e $CHEF_PACKAGE ]] || \
+    wget https://packages.chef.io/files/stable/chef/13.0.118/ubuntu/16.04/$CHEF_PACKAGE
+dpkg -i chef_13.0.118-1_amd64.deb
+
+juju-log "Installing other dependencies"
+apt-get install python
+
+juju-log "Getting Chef cookbooks"
+#CHEF_COOKBOOK_VERSION="0.1.11"
+#CHEF_COOKBOOK_ARCHIVE="chef-repository-$CHEF_COOKBOOK_VERSION.tar.gz"
+#[[ -e $CHEF_COOKBOOK_ARCHIVE ]] || \
+#    wget https://github.com/dice-project/DICE-Chef-Repository/releases/download/0.1.11/$CHEF_COOKBOOK_ARCHIVE
+#tar xfv $CHEF_COOKBOOK_ARCHIVE
+CHEF_COOKBOOK_VERSION="develop"
+CHEF_COOKBOOK_ARCHIVE="$CHEF_COOKBOOK_VERSION.zip"
+[[ -e $CHEF_COOKBOOK_ARCHIVE ]] || \
+    wget https://github.com/dice-project/DICE-Chef-Repository/archive/$CHEF_COOKBOOK_ARCHIVE
+apt-get install -y unzip
+unzip -o $CHEF_COOKBOOK_ARCHIVE
+[ -e Chef-Repository ] || ln -s "DICE-Chef-Repository-$CHEF_COOKBOOK_VERSION" Chef-Repository
+
+juju-log "Configuring local Chef"
+scripts/make_chef_parameters.py
+
+juju-log "Running common runlist"
+
+cd Chef-Repository
+chef-client -z \
+    -j ../chef.json \
+    -o recipe[apt::default],recipe[java::default],recipe[storm::default]
+

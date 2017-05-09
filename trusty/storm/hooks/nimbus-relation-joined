@@ -1,0 +1,26 @@
+#!/bin/bash
+
+juju-log "Identified as a Nimbus node"
+
+ADDRESS=`unit-get private-address`
+HOSTNAME=`hostname -f`
+
+juju-log "....  $HOSTNAME at $ADDRESS"
+
+relation-set nimbus_address=$ADDRESS
+relation-set nimbus_hostname=$HOSTNAME
+relation-set nimbus_available=Yes
+
+open-port 8080/tcp
+open-port 6627/tcp
+
+# drop something for the common hook(s) to know what to restart
+echo "nimbus" > this_node_role.txt
+
+# *** common parts: starting
+scripts/make_chef_parameters.py
+cd Chef-Repository
+chef-client -z \
+    -j ../chef.json \
+    -o recipe[storm::start_nimbus]
+# *** end of common parts: starting
